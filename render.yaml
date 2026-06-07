@@ -14,25 +14,19 @@ services:
       - key: DB_TYPE
         value: postgresql
       - key: DB_HOST
-        fromDatabase:
-          name: docsign-postgres
-          property: host
+        value: acela.proxy.rlwy.net
       - key: DB_PORT
-        fromDatabase:
-          name: docsign-postgres
-          property: port
+        value: "59853"
       - key: DB_NAME
-        fromDatabase:
-          name: docsign-postgres
-          property: database
+        value: railway
       - key: DB_USER
-        fromDatabase:
-          name: docsign-postgres
-          property: user
+        value: postgres
       - key: DB_PASSWORD
-        fromDatabase:
-          name: docsign-postgres
-          property: password
+        value: FFRcvuhsnQzlAYIMnyvGLMhxjNPDSnYS
+      - key: FERNET_KEY
+        value: Bmz2Q6jt_-EkjrmixnWlbM7A022qXfELLCbhhclv4TY=
+      - key: INTERNAL_API_KEY
+        value: 47wbV0v8MrmCbQ5Cp7Ym8WTGjXpTfFo4Dp4htq4K1Ow
       - key: SERVICE_PORT
         value: "8001"
       - key: JWT_ALGORITHM
@@ -41,16 +35,12 @@ services:
         value: "15"
       - key: REFRESH_TOKEN_EXPIRE_DAYS
         value: "7"
-      - key: MASTER_ENCRYPTION_KEY
-        sync: false
-      - key: INTERNAL_API_KEY
-        sync: false
-      - key: CORS_ORIGINS
-        value: https://your-vercel-domain.vercel.app
-      - key: FRONTEND_URL
-        value: https://your-vercel-domain.vercel.app
       - key: NOTIFICATION_SERVICE_URL
         value: https://docsign-notification-service.onrender.com
+      - key: CORS_ORIGINS
+        value: https://docsign.vercel.app
+      - key: FRONTEND_URL
+        value: https://docsign.vercel.app
 
   # ─────────────────────────────────────────────────────────
   # Document Service
@@ -67,39 +57,31 @@ services:
       - key: DB_TYPE
         value: postgresql
       - key: DB_HOST
-        fromDatabase:
-          name: docsign-postgres
-          property: host
+        value: acela.proxy.rlwy.net
       - key: DB_PORT
-        fromDatabase:
-          name: docsign-postgres
-          property: port
+        value: "59853"
       - key: DB_NAME
-        fromDatabase:
-          name: docsign-postgres
-          property: database
+        value: railway
       - key: DB_USER
-        fromDatabase:
-          name: docsign-postgres
-          property: user
+        value: postgres
       - key: DB_PASSWORD
-        fromDatabase:
-          name: docsign-postgres
-          property: password
+        value: FFRcvuhsnQzlAYIMnyvGLMhxjNPDSnYS
+      - key: FERNET_KEY
+        value: Bmz2Q6jt_-EkjrmixnWlbM7A022qXfELLCbhhclv4TY=
+      - key: INTERNAL_API_KEY
+        value: 47wbV0v8MrmCbQ5Cp7Ym8WTGjXpTfFo4Dp4htq4K1Ow
+      - key: PDF_STORAGE_PATH
+        value: /var/tmp/pdfs
       - key: SERVICE_PORT
         value: "8002"
-      - key: CORS_ORIGINS
-        value: https://your-vercel-domain.vercel.app
-      - key: FRONTEND_URL
-        value: https://your-vercel-domain.vercel.app
       - key: AUTH_SERVICE_URL
         value: https://docsign-auth-service.onrender.com
       - key: NOTIFICATION_SERVICE_URL
         value: https://docsign-notification-service.onrender.com
-      - key: PDF_STORAGE_PATH
-        value: /var/tmp/pdfs
-      - key: INTERNAL_API_KEY
-        sync: false
+      - key: CORS_ORIGINS
+        value: https://docsign.vercel.app
+      - key: FRONTEND_URL
+        value: https://docsign.vercel.app
 
   # ─────────────────────────────────────────────────────────
   # Notification Service
@@ -113,28 +95,33 @@ services:
     envVars:
       - key: PYTHONUNBUFFERED
         value: "true"
-      - key: SERVICE_PORT
-        value: "8003"
+      - key: DB_TYPE
+        value: postgresql
+      - key: DB_HOST
+        value: acela.proxy.rlwy.net
+      - key: DB_PORT
+        value: "59853"
+      - key: DB_NAME
+        value: railway
+      - key: DB_USER
+        value: postgres
+      - key: DB_PASSWORD
+        value: FFRcvuhsnQzlAYIMnyvGLMhxjNPDSnYS
+      - key: FERNET_KEY
+        value: Bmz2Q6jt_-EkjrmixnWlbM7A022qXfELLCbhhclv4TY=
+      - key: INTERNAL_API_KEY
+        value: 47wbV0v8MrmCbQ5Cp7Ym8WTGjXpTfFo4Dp4htq4K1Ow
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT
         value: "587"
       - key: SMTP_USER
-        sync: false
+        value: h220218p@hit.ac.zw
       - key: SMTP_PASS
-        sync: false
+        value: hopp dgdx lzka ltzh
       - key: SMTP_FROM
-        value: DocSign Platform <noreply@yourdomain.com>
-      - key: INTERNAL_API_KEY
-        sync: false
-      - key: FRONTEND_URL
-        value: https://your-vercel-domain.vercel.app
+        value: "DocSign <noreply@docsign.local>"
       - key: ORG_NAME
-        value: Your Organization
-
-databases:
-  - name: docsign-postgres
-    plan: free
-    databaseName: docsign
-    user: docsign
-    region: oregon
+        value: TAGV Engineering Solutions
+      - key: SERVICE_PORT
+        value: "8003"
