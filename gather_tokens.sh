@@ -149,46 +149,24 @@ print_success "Configuration received"
 
 echo ""
 
-# Save to file
-cat > "$CREDS_FILE" << 'EOF'
+# Save to file using bash variable expansion
+cat > "$CREDS_FILE" << EOF
 # DocSign Deployment Credentials
 # This file contains sensitive information - keep it secure!
 # Generated: $(date)
 
-export GITHUB_TOKEN="${github_token}"
-export VERCEL_TOKEN="${vercel_token}"
-export RENDER_TOKEN="${render_token}"
-export RAILWAY_TOKEN="${railway_token}"
-export FERNET_KEY="${fernet_key}"
-export INTERNAL_API_KEY="${internal_api_key}"
-export SMTP_USER="${smtp_user}"
-export SMTP_PASS="${smtp_pass}"
-export PROJECT_NAME="${project_name}"
-export ORG_NAME="${org_name}"
+export GITHUB_TOKEN="$github_token"
+export VERCEL_TOKEN="$vercel_token"
+export RENDER_TOKEN="$render_token"
+export RAILWAY_TOKEN="$railway_token"
+export FERNET_KEY="$FERNET_KEY"
+export INTERNAL_API_KEY="$INTERNAL_API_KEY"
+export SMTP_USER="$smtp_user"
+export SMTP_PASS="$smtp_pass"
+export PROJECT_NAME="$project_name"
+export ORG_NAME="$org_name"
 export GITHUB_REPO="shelbyTagv/docSign"
 EOF
-
-# Actually populate it
-python3 << PYTHON
-import os
-with open("$CREDS_FILE", "w") as f:
-    f.write(f"""# DocSign Deployment Credentials
-# This file contains sensitive information - keep it secure!
-# Generated: $(date)
-
-export GITHUB_TOKEN="{github_token}"
-export VERCEL_TOKEN="{vercel_token}"
-export RENDER_TOKEN="{render_token}"
-export RAILWAY_TOKEN="{railway_token}"
-export FERNET_KEY="{fernet_key}"
-export INTERNAL_API_KEY="{internal_api_key}"
-export SMTP_USER="{smtp_user}"
-export SMTP_PASS="{smtp_pass}"
-export PROJECT_NAME="{project_name}"
-export ORG_NAME="{org_name}"
-export GITHUB_REPO="shelbyTagv/docSign"
-""".replace('{github_token}', """$github_token"""))
-PYTHON
 
 # Save credentials securely
 chmod 600 "$CREDS_FILE"
