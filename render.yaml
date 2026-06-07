@@ -1,0 +1,140 @@
+services:
+  # ─────────────────────────────────────────────────────────
+  # Auth Service
+  # ─────────────────────────────────────────────────────────
+  - type: web
+    name: docsign-auth-service
+    env: python
+    plan: free
+    buildCommand: pip install -r auth-service/requirements.txt
+    startCommand: cd auth-service && gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8001 app.main:app
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "true"
+      - key: DB_TYPE
+        value: postgresql
+      - key: DB_HOST
+        fromDatabase:
+          name: docsign-postgres
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: docsign-postgres
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: docsign-postgres
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: docsign-postgres
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: docsign-postgres
+          property: password
+      - key: SERVICE_PORT
+        value: "8001"
+      - key: JWT_ALGORITHM
+        value: RS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "15"
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: "7"
+      - key: MASTER_ENCRYPTION_KEY
+        sync: false
+      - key: INTERNAL_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://your-vercel-domain.vercel.app
+      - key: FRONTEND_URL
+        value: https://your-vercel-domain.vercel.app
+      - key: NOTIFICATION_SERVICE_URL
+        value: https://docsign-notification-service.onrender.com
+
+  # ─────────────────────────────────────────────────────────
+  # Document Service
+  # ─────────────────────────────────────────────────────────
+  - type: web
+    name: docsign-document-service
+    env: python
+    plan: free
+    buildCommand: pip install -r document-service/requirements.txt
+    startCommand: cd document-service && gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8002 app.main:app
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "true"
+      - key: DB_TYPE
+        value: postgresql
+      - key: DB_HOST
+        fromDatabase:
+          name: docsign-postgres
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: docsign-postgres
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: docsign-postgres
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: docsign-postgres
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: docsign-postgres
+          property: password
+      - key: SERVICE_PORT
+        value: "8002"
+      - key: CORS_ORIGINS
+        value: https://your-vercel-domain.vercel.app
+      - key: FRONTEND_URL
+        value: https://your-vercel-domain.vercel.app
+      - key: AUTH_SERVICE_URL
+        value: https://docsign-auth-service.onrender.com
+      - key: NOTIFICATION_SERVICE_URL
+        value: https://docsign-notification-service.onrender.com
+      - key: PDF_STORAGE_PATH
+        value: /var/tmp/pdfs
+      - key: INTERNAL_API_KEY
+        sync: false
+
+  # ─────────────────────────────────────────────────────────
+  # Notification Service
+  # ─────────────────────────────────────────────────────────
+  - type: web
+    name: docsign-notification-service
+    env: python
+    plan: free
+    buildCommand: pip install -r notification-service/requirements.txt
+    startCommand: cd notification-service && gunicorn -w 2 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8003 app.main:app
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "true"
+      - key: SERVICE_PORT
+        value: "8003"
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        value: DocSign Platform <noreply@yourdomain.com>
+      - key: INTERNAL_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        value: https://your-vercel-domain.vercel.app
+      - key: ORG_NAME
+        value: Your Organization
+
+databases:
+  - name: docsign-postgres
+    plan: free
+    databaseName: docsign
+    user: docsign
+    region: oregon

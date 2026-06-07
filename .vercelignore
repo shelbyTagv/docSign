@@ -1,0 +1,11 @@
+auth-service/
+document-service/
+notification-service/
+mysql/
+nginx/
+docker-compose.yml
+Dockerfile
+.env
+.env.local
+.env.*.local
+README.md

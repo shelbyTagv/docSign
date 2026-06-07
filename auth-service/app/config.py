@@ -42,12 +42,20 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        """Construct MySQL connection URL. PyMySQL is the pure-Python driver
-        that works in slim containers without system libmysqlclient."""
-        return (
-            f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}"
-            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
-            f"?charset=utf8mb4"
+        """Construct database connection URL.
+        Supports both PostgreSQL and MySQL based on DB_TYPE environment variable."""
+        db_type = getattr(self, 'DB_TYPE', 'postgresql')
+        
+        if db_type == 'mysql':
+            return (
+                f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}"
+                f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+                f"?charset=utf8mb4"
+            )
+        else:  # PostgreSQL default
+            return (
+                f"postgresql+psycopg2://{self.DB_USER}:{self.DB_PASSWORD}"
+                f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
 
     @property
