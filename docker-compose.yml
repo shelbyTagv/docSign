@@ -1,0 +1,181 @@
+version: "3.9"
+
+# ─── Networks ────────────────────────────────────────────────────────────────
+# All services share an internal overlay network. Only nginx exposes port 80
+# externally. Service-to-service calls use Docker's internal DNS resolution.
+networks:
+  docsign-network:
+    driver: bridge
+
+# ─── Volumes ─────────────────────────────────────────────────────────────────
+# mysql-data: persists MySQL data between container restarts
+# pdf-storage: shared between document-service (writer) and
+#   notification-service (reader for email attachments)
+volumes:
+  mysql-data:
+  pdf-storage:
+  auth-keys:  # Persists RSA key pair generated on first startup
+
+services:
+  # ═══════════════════════════════════════════════════════════
+  # MySQL 8 — Primary datastore for all services
+  # ═══════════════════════════════════════════════════════════
+  mysql:
+    image: mysql:8.0
+    container_name: docsign-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - docsign-network
+    healthcheck:
+      # mysqladmin ping is faster and more reliable than a query for health checks
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ═══════════════════════════════════════════════════════════
+  # Auth Service — Identity, JWT, MFA, Signature registration
+  # ═══════════════════════════════════════════════════════════
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: docsign-auth
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Override DB_HOST to use Docker service name instead of localhost
+      DB_HOST: mysql
+      SERVICE_PORT: 8001
+    volumes:
+      - auth-keys:/app/keys  # RSA key pair persistence across restarts
+    networks:
+      - docsign-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    expose:
+      - "8001"
+
+  # ═══════════════════════════════════════════════════════════
+  # Document Service — CRUD, workflow, PDF generation
+  # ═══════════════════════════════════════════════════════════
+  document-service:
+    build:
+      context: ./document-service
+      dockerfile: Dockerfile
+    container_name: docsign-documents
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_HOST: mysql
+      SERVICE_PORT: 8002
+      AUTH_SERVICE_URL: http://auth-service:8001
+      NOTIFICATION_SERVICE_URL: http://notification-service:8003
+    volumes:
+      - pdf-storage:/app/storage  # Write PDFs here; notification service reads them
+    networks:
+      - docsign-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    expose:
+      - "8002"
+
+  # ═══════════════════════════════════════════════════════════
+  # Notification Service — Email delivery
+  # ═══════════════════════════════════════════════════════════
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: docsign-notifications
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SERVICE_PORT: 8003
+    volumes:
+      - pdf-storage:/app/storage:ro  # Read-only access — only document-service writes
+    networks:
+      - docsign-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    expose:
+      - "8003"
+
+  # ═══════════════════════════════════════════════════════════
+  # Frontend — React/Vite built and served via nginx:alpine
+  # ═══════════════════════════════════════════════════════════
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: docsign-frontend
+    restart: unless-stopped
+    networks:
+      - docsign-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    expose:
+      - "80"
+
+  # ═══════════════════════════════════════════════════════════
+  # Nginx — Single external entry point, reverse proxy
+  # Routes: /api/auth/ → auth-service, /api/documents/ → document-service
+  #         /api/notify/ → notification-service, / → frontend
+  # ═══════════════════════════════════════════════════════════
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: docsign-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"  # The ONLY external port exposed by the whole system
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - docsign-network
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      document-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
